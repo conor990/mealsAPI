@@ -1,8 +1,27 @@
 const express = require('express')
 const app = express()
+const https = require('https');
+const fs = require('fs');
 const merchantModel = require("./models/merchantModels")
 const mongoose = require('mongoose')
 
+
+// Loading in the certificate and private key
+const privateKey = fs.readFileSync('key.pem', 'utf8');
+const certificate = fs.readFileSync('cert.pem', 'utf8');
+const ca = fs.readFileSync('cert.pem', 'utf8');
+
+const credentials = {
+  key: privateKey,
+  cert: certificate,
+  ca: ca
+};
+
+
+// Creating the HTTPS server with the credentials
+const httpsServer = https.createServer(credentials, app);
+
+// your API should be running over HTTPS, which helps to address the sensitive data exposure issue.
 
 
 app.use(express.json()) //allows app to understand JSON
@@ -43,7 +62,7 @@ app.get('/merchants/:merchantId', async(req, res)=>{
 })
 
 
-//creates the merchants
+//creates the merchants     //injection A1 : injection vulnerability in your endpoints by not validating or sanitizing user inputs.
 app.post('/merchants', async(req, res)=>{
     try{
         const merchant = await merchantModel.create(req.body)
@@ -53,10 +72,9 @@ app.post('/merchants', async(req, res)=>{
         console.log(error.message)
     }
 })
+//Cross-Site Scripting (XSS) (A7): Although XSS vulnerabilities are more common in web applications, you could still introduce a vulnerability by returning user-generated content without proper validation, sanitization, or encoding.
 
-
-//update merchants
-
+//update merchants   / Broken Access Control (A5)
 app.put('/merchants/:merchantId', async (req, res) => {
     try {
       const { merchantId } = req.params;
@@ -99,8 +117,10 @@ mongoose.connect('mongodb+srv://conor990:Tallaght@merchantapi.sevbnez.mongodb.ne
 .then(()=> {
     console.log('connected to MongoDB')
     //server listening for incoming requests
-    app.listen(3000, ()=> {
-        console.log('merchant API app is running on port 3000')
+    httpsServer.listen(3000, () => {
+      console.log('merchant API app is running on port 3000');
+    }).on('error', (error) => {
+      console.error('Error starting HTTPS server:', error);
     });
 }).catch((error)=>{
     console.log(error)
