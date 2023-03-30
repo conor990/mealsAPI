@@ -21,7 +21,7 @@ const credentials = {
 // Creating the HTTPS server with the credentials
 const httpsServer = https.createServer(credentials, app);
 
-// your API should be running over HTTPS, which helps to address the sensitive data exposure issue.
+// ***your API should be running over HTTPS, which helps to address the sensitive data exposure issue.
 
 
 app.use(express.json()) //allows app to understand JSON
