@@ -4,6 +4,8 @@ const https = require('https');
 const fs = require('fs');
 const merchantModel = require("./models/merchantModels")
 const mongoose = require('mongoose')
+const { body, validationResult } = require('express-validator');
+
 
 
 // Loading in the certificate and private key
@@ -21,8 +23,9 @@ const credentials = {
 // Creating the HTTPS server with the credentials
 const httpsServer = https.createServer(credentials, app);
 
-// ***your API should be running over HTTPS, which helps to address the sensitive data exposure issue.
-
+// ***API is running over HTTPS, which helps to address the sensitive data exposure issue.
+//*** Added validation and sanitization rules for the inputs(put and post) /fixing injection a1 and cross site scripting vulnerabilities because it was displaying user generated content without validation*/
+//removed sensitive data from being returned to user addressing Sensitive Data Exposure (A3) problem.
 
 app.use(express.json()) //allows app to understand JSON
 
@@ -38,7 +41,7 @@ app.get('/', (req, res)=> {
 //returns all merchants
 app.get('/merchants', async(req, res)=>{
     try{
-        const merchants = await merchantModel.find({}); //empty curly brackets is all products
+        const merchants = await merchantModel.find({}).select('-revenue');; //empty curly brackets is all products
         res.status(200).json(merchants)
     }
     catch(error){
@@ -50,7 +53,7 @@ app.get('/merchants', async(req, res)=>{
 //returns individual merchant
 app.get('/merchants/:merchantId', async(req, res)=>{
     try{
-        const merchant = await merchantModel.findOne({ merchantId: req.params.merchantId }); 
+        const merchant = await merchantModel.findOne({ merchantId: req.params.merchantId }).select('-revenue');; 
         if (!merchant) {
             return res.status(404).json({ message: 'Merchant not found' });
         }
@@ -62,8 +65,14 @@ app.get('/merchants/:merchantId', async(req, res)=>{
 })
 
 
-//creates the merchants     //injection A1 : injection vulnerability in your endpoints by not validating or sanitizing user inputs.
-app.post('/merchants', async(req, res)=>{
+
+app.post('/merchants',   [
+  body('latitude').isNumeric().withMessage('Latitude must be a number'),
+  body('longitude').isNumeric().withMessage('Longitude must be a number'),
+  body('merchantId').isInt().withMessage('Merchant ID must be an integer'),
+  body('merchantName').trim().escape().isLength({ min: 1 }).withMessage('Merchant name must not be empty'),
+  body('revenue').isNumeric().withMessage('Revenue must be a number')
+], async(req, res)=>{
     try{
         const merchant = await merchantModel.create(req.body)
         res.status(200).json(merchant);
@@ -72,10 +81,16 @@ app.post('/merchants', async(req, res)=>{
         console.log(error.message)
     }
 })
-//Cross-Site Scripting (XSS) (A7): Although XSS vulnerabilities are more common in web applications, you could still introduce a vulnerability by returning user-generated content without proper validation, sanitization, or encoding.
+
 
 //update merchants   / Broken Access Control (A5)
-app.put('/merchants/:merchantId', async (req, res) => {
+app.put('/merchants/:merchantId',   [
+  body('latitude').isNumeric().withMessage('Latitude must be a number'),
+  body('longitude').isNumeric().withMessage('Longitude must be a number'),
+  body('merchantId').isInt().withMessage('Merchant ID must be an integer'),
+  body('merchantName').trim().escape().isLength({ min: 1 }).withMessage('Merchant name must not be empty'),
+  body('revenue').isNumeric().withMessage('Revenue must be a number')
+], async (req, res) => {
     try {
       const { merchantId } = req.params;
       const updatedMerchant = await merchantModel.findOneAndUpdate({ merchantId }, req.body, { new: true });
