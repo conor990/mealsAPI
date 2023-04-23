@@ -10,7 +10,7 @@ const { body, validationResult } = require('express-validator');
 
 // Loading in the certificate and private key
 const key = process.env.KEY_PEM;
-const certificate = fs.readFileSync('cert.pem', 'utf8');
+const cert = process.env.CERT_PEM;
 const ca = fs.readFileSync('cert.pem', 'utf8');
 
 const credentials = {
