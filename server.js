@@ -1,42 +1,16 @@
-const express = require('express')
-const app = express()
-const https = require('https');
-const fs = require('fs');
+const express = require('express');
+const app = express();
+const http = require('http');
 const Meal = require('./models/mealsModels.js');
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
 
-
-
-// Loading in the certificate and private key
-const key = process.env.KEY_PEM;
-const cert = process.env.CERT_PEM;
-const ca = fs.readFileSync('cert.pem', 'utf8');
-
-const credentials = {
-  key: privateKey,
-  cert: certificate,
-  ca: ca
-};
-
-
-// Creating the HTTPS server with the credentials
-const httpsServer = https.createServer(credentials, app);
-
-// ***API is running over HTTPS, which helps to address the sensitive data exposure issue.
-//*** Added validation and sanitization rules for the inputs(put and post) /fixing injection a1 and cross site scripting vulnerabilities because it was displaying user generated content without validation*/
-//removed sensitive data from being returned to user addressing Sensitive Data Exposure (A3) problem.
-
-app.use(express.json()) //allows app to understand JSON
-
-
-
+app.use(express.json()); //allows app to understand JSON
 
 //routes
-app.get('/', (req, res)=> {
-    res.send('Hello Meals API')
-})
-
+app.get('/', (req, res) => {
+  res.send('Hello Meals API');
+});
 
 app.get('/meals', async (req, res) => {
   try {
@@ -47,9 +21,6 @@ app.get('/meals', async (req, res) => {
   }
 });
 
-
-
-//returns individual meal
 app.get('/meals/:id', async (req, res) => {
   try {
     const meal = await Meal.findById(req.params.id);
@@ -62,8 +33,6 @@ app.get('/meals/:id', async (req, res) => {
   }
 });
 
-
-
 app.post('/meals', async (req, res) => {
   try {
     const meal = await Meal.create(req.body);
@@ -72,7 +41,6 @@ app.post('/meals', async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-
 
 app.post('/meals/bulk', async (req, res) => {
   try {
@@ -84,8 +52,6 @@ app.post('/meals/bulk', async (req, res) => {
   }
 });
 
-
-//update merchants   / Broken Access Control (A5)
 app.put('/meals/:id', [
   body('name').trim().escape().isLength({ min: 1 }).withMessage("Please enter the meal's name"),
   body('prep_time').isNumeric().withMessage("Please enter the meal's prep time"),
@@ -104,9 +70,6 @@ app.put('/meals/:id', [
   }
 });
 
-
-
-
 app.delete('/meals/:id', async (req, res) => {
   try {
     const meal = await Meal.findByIdAndDelete(req.params.id);
@@ -119,23 +82,13 @@ app.delete('/meals/:id', async (req, res) => {
   }
 });
 
-
-
-
-
-
-
-
 //connecting to database 
 mongoose.connect('mongodb+srv://conor990:Tallaght1!@mealsapi.pnm5tav.mongodb.net/test')
-.then(()=> {
-    console.log('connected to MongoDB')
+  .then(() => {
+    console.log('connected to MongoDB');
+
     //server listening for incoming requests
-    httpsServer.listen(3000, () => {
-      console.log('merchant API app is running on port 3000');
-    }).on('error', (error) => {
-      console.error('Error starting HTTPS server:', error);
-    });
-}).catch((error)=>{
-    console.log(error)
-})
+    const server = http.createServer(app);
+    server.listen
+  }
+  )
